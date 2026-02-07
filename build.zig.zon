@@ -1,0 +1,10 @@
+.{
+    .name = .sevenz,
+    .version = "25.1.0",
+    .fingerprint = 0x26400e71532c161b,
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "C",
+    },
+}
