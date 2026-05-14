@@ -4,17 +4,6 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Create static library for 7z archive reading/extraction
-    const lib = b.addLibrary(.{
-        .name = "7z",
-        .linkage = .static,
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = true,
-        }),
-    });
-
     const c_path = b.path("C");
 
     // Common C flags
@@ -46,15 +35,30 @@ pub fn build(b: *std.Build) void {
         "C/Ppmd7Dec.c",
     };
 
+    // In Zig 0.16, addCSourceFile / addIncludePath moved off *Step.Compile and
+    // onto *Build.Module — call them on the module before binding it to a Compile.
+    const lib_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
     for (c_sources) |src| {
-        lib.addCSourceFile(.{
+        lib_mod.addCSourceFile(.{
             .file = b.path(src),
             .flags = cflags,
         });
     }
 
     // Add C/ as include path for internal headers
-    lib.addIncludePath(c_path);
+    lib_mod.addIncludePath(c_path);
+
+    // Create static library for 7z archive reading/extraction
+    const lib = b.addLibrary(.{
+        .name = "7z",
+        .linkage = .static,
+        .root_module = lib_mod,
+    });
 
     // Install public headers needed by consumers
     lib.installHeader(b.path("C/7z.h"), "7z.h");
